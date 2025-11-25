@@ -42,7 +42,7 @@ export default function Home({ navigation }) {
       <View style={styles.container}>
         <FlatList
           data={recipes}
-          contentContainerStyle={{ paddingBottom: 80 }}   // 👈 IMPORTANT FIX
+          contentContainerStyle={{ paddingBottom: 20 }}
           keyExtractor={(item) => item._id}
           renderItem={({ item }) => (
             <RecipeCard
@@ -62,7 +62,6 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: "#f5f5f5",
-    paddingBottom: 20,   // 👈 extra safe area
   },
   container: {
     flex: 1,

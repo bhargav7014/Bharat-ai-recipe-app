@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Login from "../screens/Login";
 import Register from "../screens/Register";
 import TabsNavigator from "./TabsNavigator";
-import RecipeDetails from "../screens/RecipeDetails";
+import RecipeDetails from "../components/RecipeDetails";
 
 const Stack = createNativeStackNavigator();
 
