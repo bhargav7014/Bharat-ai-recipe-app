@@ -12,8 +12,8 @@ export default function AppNavigation() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Login" component={Login} />
-        <Stack.Screen name="Register" component={Register} />
+        {/* <Stack.Screen name="Login" component={Login} />
+        <Stack.Screen name="Register" component={Register} /> */}
 
         {/* Main App after login */}
         <Stack.Screen name="Main" component={TabsNavigator} />
