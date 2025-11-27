@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { API } from "../api/api";
+import { getUser, getChatHistory, saveChatHistory } from "../storage/storage";
 
 // UI COLORS
 const PRIMARY = "#00AEEF"; 
@@ -25,9 +26,34 @@ const BOT_BUBBLE_COLOR = CARD;
 const ACCENT_COLOR = "#FF6347"; 
 
 export default function AIChat() {
-  const [messages, setMessages] = useState([
-    { role: "assistant", text: "👋 Hi! Ask me anything OR tell me ingredients to generate a recipe!" }
-  ]);
+  const [user, setUser] = useState(null);
+
+  // ✅ THIS WAS MISSING (the reason for crash)
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    loadUserAndChat();
+  }, []);
+
+  const loadUserAndChat = async () => {
+    const u = await getUser();
+    setUser(u);
+
+    const saved = await getChatHistory(u._id);
+
+    if (saved && saved.length > 0) {
+      setMessages(saved);
+    } else {
+      setMessages([
+        {
+          role: "assistant",
+          text: "👋 Hi! Ask me anything OR tell me ingredients to generate a recipe!",
+        },
+      ]);
+    }
+  };
+
+
 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -69,7 +95,11 @@ export default function AIChat() {
     if (!input.trim() || loading) return;
 
     const userMsg = { role: "user", text: input };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages(prev => {
+      const updated = [...prev, userMsg];
+      saveChatHistory(user._id, updated);
+      return updated;
+    });
 
     const userInput = input;
     setInput("");
@@ -88,18 +118,22 @@ export default function AIChat() {
         const res = await API.post("/ai/generate", payload);
         const recipe = res.data;
 
-        setMessages(prev => [
-          ...prev,
-          { role: "assistant", type: "recipe", recipe }
-        ]);
+        setMessages(prev => {
+          const updated = [...prev, { role: "assistant", type: "recipe", recipe }];
+          saveChatHistory(user._id, updated);
+          return updated;
+        });
+
       } else {
         const res = await API.post("/chat/ask", { message: userInput });
         const reply = res.data.reply;
 
-        setMessages(prev => [
-          ...prev,
-          { role: "assistant", text: reply }
-        ]);
+        setMessages(prev => {
+          const updated = [...prev, { role: "assistant", text: reply }];
+          saveChatHistory(user._id, updated);
+          return updated;
+        });
+
       }
     } catch (err) {
       setMessages(prev => [

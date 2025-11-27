@@ -1,8 +1,6 @@
 import { useEffect, useState, useContext } from "react";
 import {
-  SafeAreaView,
   View,
-  Text,
   FlatList,
   ActivityIndicator,
   StyleSheet,
@@ -14,10 +12,6 @@ import { FavoritesContext } from "../context/FavoritesContext";
 export default function Home({ navigation }) {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
-  console.log("FAVORITES:", favorites);
-
-
-  // ❗ You forgot useContext import earlier
   const { favorites, toggleFavorite } = useContext(FavoritesContext);
 
   const fetchRecipes = async () => {
@@ -44,37 +38,31 @@ export default function Home({ navigation }) {
       <FlatList
         data={recipes}
         contentContainerStyle={{ paddingBottom: 20 }}
-        keyExtractor={(item) => item._id}
-        renderItem={({ item }) => (
-          <RecipeCard
-            item={item}
+        keyExtractor={(item) => item._id} // ← will update after log
+        renderItem={({ item }) => {
+          
+          // LOG HERE (CORRECT PLACE)
+          console.log("ITEM STRUCTURE:", item);
 
-            onPress={() =>
-              navigation.navigate("RecipeDetails", { recipeId: item._id })
-            }
-
-            isFavorite={favorites.includes(item._id)}
-
-            onToggleFavorite={toggleFavorite}
-          />
-        )}
+          return (
+            <RecipeCard
+              item={item}
+              onPress={() =>
+                navigation.navigate("RecipeDetails", { recipeId: item._id }) // ← will update if needed
+              }
+              isFavorite={favorites.includes(item._id)} // ← will update if needed
+              onToggleFavorite={() => toggleFavorite(item._id)} // ← will update if needed
+            />
+          );
+        }}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
   container: {
     flex: 1,
     padding: 16,
-  },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
   },
 });

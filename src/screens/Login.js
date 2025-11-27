@@ -6,19 +6,19 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  SafeAreaView, // Use SafeAreaView for better layout on modern devices
-  KeyboardAvoidingView, // Add KAV to handle keyboard pushing the UI
+  SafeAreaView,
+  KeyboardAvoidingView,
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { API } from "../api/api"; // Assuming this path is correct
+import { API } from "../api/api";
+import { saveUser } from "../storage/storage";   
 
-// --- UI Constants ---
-const PRIMARY_COLOR = "#5B37B7"; // Deep Violet/Indigo
-const SECONDARY_COLOR = "#8C6ADF"; // Lighter Violet
+const PRIMARY_COLOR = "#5B37B7";
+const SECONDARY_COLOR = "#8C6ADF";
 const TEXT_COLOR = "#333333";
 const PLACEHOLDER_COLOR = "#999999";
-const BACKGROUND_COLOR = "#F4F7FC"; // Very light grey/blue
+const BACKGROUND_COLOR = "#F4F7FC";
 
 export default function Login({ navigation }) {
   const [email, setEmail] = useState("");
@@ -26,7 +26,8 @@ export default function Login({ navigation }) {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const login = async () => {
+  // FINAL WORKING LOGIN FUNCTION
+  const handleLogin = async () => {
     if (!email || !password) {
       alert("Please fill all fields");
       return;
@@ -34,11 +35,20 @@ export default function Login({ navigation }) {
 
     try {
       setLoading(true);
-      // NOTE: This logic is kept exactly as you provided
-      const res = await API.post("/users/login", { email, password });
-      setLoading(false);
 
+      // Your working backend route
+      const res = await API.post("/users/login", { email, password });
+
+      console.log("LOGIN RESPONSE:", res.data);
+
+      const user = res.data;   // backend returns user object directly
+
+      // Save user EXACTLY as backend sends it
+      await saveUser(user);
+
+      setLoading(false);
       navigation.replace("Main");
+
     } catch (err) {
       setLoading(false);
       alert("Login failed. Check email or password.");
@@ -50,12 +60,10 @@ export default function Login({ navigation }) {
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={0}
       >
         <Text style={styles.title}>Welcome Back!</Text>
         <Text style={styles.subtitle}>Sign in to continue your journey.</Text>
 
-        {/* Email Input */}
         <TextInput
           style={styles.input}
           placeholder="Email Address"
@@ -65,7 +73,6 @@ export default function Login({ navigation }) {
           autoCapitalize="none"
         />
 
-        {/* Password Input */}
         <View style={styles.passwordRow}>
           <TextInput
             style={[styles.input, { flex: 1, marginVertical: 0 }]}
@@ -87,8 +94,11 @@ export default function Login({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* Login Button */}
-        <TouchableOpacity style={styles.button} onPress={login} disabled={loading}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleLogin}
+          disabled={loading}
+        >
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
@@ -96,22 +106,20 @@ export default function Login({ navigation }) {
           )}
         </TouchableOpacity>
 
-        {/* Register Navigation */}
         <TouchableOpacity
           onPress={() => navigation.navigate("Register")}
           style={styles.registerLink}
         >
           <Text style={styles.registerText}>
-            Don't have an account? <Text style={styles.registerLinkText}>Register</Text>
+            Don't have an account?{" "}
+            <Text style={styles.registerLinkText}>Register</Text>
           </Text>
         </TouchableOpacity>
-
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-// --- NEW STYLES ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -123,29 +131,27 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "800",
     color: PRIMARY_COLOR,
-    textAlign: "left",
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
     color: PLACEHOLDER_COLOR,
-    textAlign: "left",
     marginBottom: 40,
   },
   input: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#FFF",
     padding: 18,
     borderRadius: 12,
     marginVertical: 10,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: "#E0E0E0", // Light border
+    borderColor: "#E0E0E0",
     color: TEXT_COLOR,
   },
   passwordRow: {
     flexDirection: "row",
     alignItems: "center",
-    position: 'relative',
+    position: "relative",
     marginVertical: 10,
   },
   eyeButton: {
@@ -159,10 +165,6 @@ const styles = StyleSheet.create({
     padding: 18,
     borderRadius: 12,
     marginTop: 30,
-    shadowColor: PRIMARY_COLOR,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
     elevation: 8,
   },
   buttonText: {
@@ -173,7 +175,7 @@ const styles = StyleSheet.create({
   },
   registerLink: {
     marginTop: 40,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   registerText: {
     fontSize: 14,
@@ -182,5 +184,5 @@ const styles = StyleSheet.create({
   registerLinkText: {
     fontWeight: "bold",
     color: SECONDARY_COLOR,
-  }
+  },
 });

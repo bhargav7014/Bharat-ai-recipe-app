@@ -1,26 +1,20 @@
 import React, { useContext, useEffect, useState } from "react";
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, SafeAreaView } from "react-native";
+import { View, Text, FlatList, ActivityIndicator, StyleSheet } from "react-native";
 import RecipeCard from "../components/RecipeCard";
 import { FavoritesContext } from "../context/FavoritesContext";
 import { API } from "../api/api";
 
-const PRIMARY_COLOR = "#00B8D4";
-const SUBTLE_TEXT_COLOR = "#777777";
-const BACKGROUND_COLOR = "#F9F9F9";
-
 export default function Favorites({ navigation }) {
   const { favorites, toggleFavorite } = useContext(FavoritesContext);
-
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch recipe list from API (same as Home)
   const fetchRecipes = async () => {
     try {
       const res = await API.get("/recipes");
       setRecipes(res.data);
       setLoading(false);
-    } catch (e) {
+    } catch (err) {
       setLoading(false);
       alert("Failed to load recipes");
     }
@@ -30,68 +24,37 @@ export default function Favorites({ navigation }) {
     fetchRecipes();
   }, []);
 
-  // Filter only favorites
-  const favoriteRecipes = recipes.filter(r => favorites.includes(r._id));
+  // Correct filtering using _id
+  const favoriteRecipes = recipes.filter((r) => favorites.includes(r._id));
 
   if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color={PRIMARY_COLOR} />
-      </View>
-    );
+    return <ActivityIndicator size="large" color="#00B8D4" />;
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <Text style={styles.headerTitle}>Your Favorite Recipes</Text>
+    <View style={{ flex: 1, padding: 16 }}>
+      <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 10 }}>
+        Your Favorites
+      </Text>
 
-      {favoriteRecipes.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No favorites yet.</Text>
-          <Text style={styles.emptyText}>Tap the heart to add one ❤️</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={favoriteRecipes}
-          keyExtractor={(item) => item._id}
-          renderItem={({ item }) => (
+      <FlatList
+        data={favoriteRecipes}
+        keyExtractor={(item) => item._id}
+        renderItem={({ item }) => {
+          console.log("FAV ITEM:", item); // <--- IMPORTANT
+          
+          return (
             <RecipeCard
               item={item}
               isFavorite={favorites.includes(item._id)}
-              onToggleFavorite={toggleFavorite}
+              onToggleFavorite={() => toggleFavorite(item._id)} // <--- FIXED
               onPress={() =>
                 navigation.navigate("RecipeDetails", { recipeId: item._id })
               }
             />
-          )}
-        />
-      )}
-    </SafeAreaView>
+          );
+        }}
+      />
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: BACKGROUND_COLOR,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: PRIMARY_COLOR,
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyText: {
-    fontSize: 16,
-    color: SUBTLE_TEXT_COLOR,
-    textAlign: "center",
-    marginTop: 10,
-  },
-});
