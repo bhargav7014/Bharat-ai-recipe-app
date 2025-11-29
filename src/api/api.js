@@ -2,7 +2,7 @@ import axios from "axios";
 import { getUser } from "../storage/storage";
 
 export const API = axios.create({
-  baseURL: "http://192.168.1.22:5000/api",
+  baseURL: "https://app-backend-1s3q.onrender.com/api",
 });
 
 // Auto add token to all requests
