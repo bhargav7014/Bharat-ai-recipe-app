@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from "react";
-import { saveFavorites, getFavorites } from "../storage/storage";
+import { getUser, getFavorites, saveFavorites } from "../storage/storage";
 
 export const FavoritesContext = createContext();
 
@@ -7,23 +7,31 @@ export default function FavoritesProvider({ children }) {
   const [favorites, setFavorites] = useState([]);
 
   useEffect(() => {
-    loadFavs();
+    loadFavorites();
   }, []);
 
-  const loadFavs = async () => {
-    const saved = await getFavorites();
+  const loadFavorites = async () => {
+    const user = await getUser();
+    if (!user || !user.userId) return;
+
+    const saved = await getFavorites(user.userId);
     setFavorites(saved);
   };
 
-  const toggleFavorite = async (id) => {
-    setFavorites(prev => {
-      const updated = prev.includes(id)
-        ? prev.filter(f => f !== id)
-        : [...prev, id];
+  const toggleFavorite = async (recipeId) => {
+    const user = await getUser();
+    if (!user || !user.userId) return;
 
-      saveFavorites(updated);
-      return updated;
-    });
+    let updated = [...favorites];
+
+    if (updated.includes(recipeId)) {
+      updated = updated.filter((id) => id !== recipeId);
+    } else {
+      updated.push(recipeId);
+    }
+
+    setFavorites(updated);
+    await saveFavorites(user.userId, updated);
   };
 
   return (

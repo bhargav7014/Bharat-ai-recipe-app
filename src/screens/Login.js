@@ -27,33 +27,50 @@ export default function Login({ navigation }) {
   const [loading, setLoading] = useState(false);
 
   // FINAL WORKING LOGIN FUNCTION
-  const handleLogin = async () => {
-    if (!email || !password) {
-      alert("Please fill all fields");
+const handleLogin = async () => {
+  if (!email || !password) {
+    alert("Please fill all fields");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    // 1. Login (correct endpoint)
+    const res = await API.post("/users/login", { email, password });
+    const token = res.data.token;
+
+    if (!token) {
+      alert("Invalid login response");
+      setLoading(false);
       return;
     }
 
-    try {
-      setLoading(true);
+    // 2. Save token
+    await saveUser({ token });
 
-      // Your working backend route
-      const res = await API.post("/users/login", { email, password });
+    // 3. Add token to headers
+    API.defaults.headers.common["Authorization"] = "Bearer " + token;
 
-      console.log("LOGIN RESPONSE:", res.data);
+    // 4. Fetch profile (correct endpoint)
+    const profileRes = await API.get("/users/me");
 
-      const user = res.data;   // backend returns user object directly
+    // 5. Save merged user data
+    await saveUser({
+      token,
+      profile: profileRes.data,
+      userId: profileRes.data.userId
+    });
 
-      // Save user EXACTLY as backend sends it
-      await saveUser(user);
+    setLoading(false);
+    navigation.replace("Main");
 
-      setLoading(false);
-      navigation.replace("Main");
-
-    } catch (err) {
-      setLoading(false);
-      alert("Login failed. Check email or password.");
-    }
-  };
+  } catch (err) {
+    console.log("LOGIN ERROR:", err?.response?.data || err);
+    setLoading(false);
+    alert("Login failed. Check email or password.");
+  }
+};
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: BACKGROUND_COLOR }}>

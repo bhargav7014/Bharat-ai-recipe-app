@@ -1,36 +1,19 @@
-// import React, { useRef } from "react";
-// import { StyleSheet, View } from "react-native";
-// import { Video } from "expo-av";
+// import React, { useEffect } from "react";
+// import { View, Image } from "react-native";
 
 // export default function SplashVideoScreen({ navigation }) {
-//   const videoRef = useRef(null);
+  
+//   useEffect(() => {
+//     const timer = setTimeout(() => {
+//       navigation.replace("AuthLoading");
+//     }, 2500); // 2.5 seconds splash
+
+//     return () => clearTimeout(timer);
+//   }, []);
 
 //   return (
-//     <View style={styles.container}>
-//       <Video
-//         ref={videoRef}
-//         source={require("../../assets/splash.mp4")}
-//         style={styles.video}
-//         resizeMode="cover"
-//         shouldPlay
-//         isLooping={false}
-//         onPlaybackStatusUpdate={(status) => {
-//           if (status.didJustFinish) {
-//             navigation.replace("Main");
-//           }
-//         }}
-//       />
+//     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+//       <Image source={require("../assets/splash.gif")} style={{ width: 200, height: 200 }} />
 //     </View>
 //   );
 // }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: "black",
-//   },
-//   video: {
-//     width: "100%",
-//     height: "100%",
-//   },
-// });

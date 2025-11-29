@@ -9,16 +9,17 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  Alert
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { API } from "../api/api"; // Assuming this path is correct
+import { API } from "../api/api";
+import { saveUser } from "../storage/storage";
 
-// --- UI Constants ---
-const PRIMARY_COLOR = "#00B8D4"; // Cyan/Teal (A vibrant, welcoming color)
-const SECONDARY_COLOR = "#00838F"; // Darker Teal
+const PRIMARY_COLOR = "#00B8D4";
+const SECONDARY_COLOR = "#00838F";
 const TEXT_COLOR = "#333333";
 const PLACEHOLDER_COLOR = "#999999";
-const BACKGROUND_COLOR = "#E0F7FA"; // Lightest Cyan/Aqua
+const BACKGROUND_COLOR = "#E0F7FA";
 
 export default function Register({ navigation }) {
   const [email, setEmail] = useState("");
@@ -28,27 +29,82 @@ export default function Register({ navigation }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // EMAIL VALIDATION
+  const validateEmail = (email) => {
+    return email.includes("@"); // simple and correct
+  };
+
+  // PASSWORD VALIDATION (Medium)
+  const validatePassword = (password) => {
+    const hasMin = password.length >= 8;
+    const hasNum = /\d/.test(password);
+    const hasLetter = /[A-Za-z]/.test(password);
+    return hasMin && hasNum && hasLetter;
+  };
+
   const register = async () => {
     if (!email || !password || !confirm) {
-      alert("Please fill all fields");
+      Alert.alert("Error", "Please fill all fields");
       return;
     }
+
+    if (!validateEmail(email)) {
+      Alert.alert("Invalid Email", "Email must contain '@' and a '.'");
+      return;
+    }
+
+    if (!validatePassword(password)) {
+      Alert.alert(
+        "Weak Password",
+        "Password must be at least 8 characters long, contain a number and a letter."
+      );
+      return;
+    }
+
     if (password !== confirm) {
-      alert("Passwords do not match");
+      Alert.alert("Password Error", "Passwords do not match");
       return;
     }
 
     try {
       setLoading(true);
-      // NOTE: This logic is kept exactly as you provided
-      await API.post("/users/register", { email, password });
+
+      // REGISTER USER
+      const res = await API.post("/users/register", {
+        email,
+        password,
+      });
+
+      const { userId, mongoId } = res.data;
+
+      // AUTO-LOGIN
+      const loginRes = await API.post("/users/login", { email, password });
+      const token = loginRes.data.token;
+
+      // SAVE TOKEN
+      await saveUser({ token });
+
+      // ADD TOKEN TO API REQUESTS
+      API.defaults.headers.common["Authorization"] = "Bearer " + token;
+
+      // GET PROFILE
+      const profileRes = await API.get("/users/me");
+      await saveUser({
+        token,
+        profile: profileRes.data,
+        userId: profileRes.data.userId,
+      });
+
       setLoading(false);
 
-      alert("Account created successfully!");
-      navigation.replace("Login");
+      // SUCCESS MESSAGE
+      Alert.alert("Success", "Registration successful!");
+
+      navigation.replace("Main");
+
     } catch (err) {
       setLoading(false);
-      alert("Email already exists or server error.");
+      Alert.alert("Error", "Registration failed. Try different email.");
     }
   };
 
@@ -57,12 +113,10 @@ export default function Register({ navigation }) {
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={0}
       >
         <Text style={styles.title}>Create Account 🚀</Text>
         <Text style={styles.subtitle}>Join us and start your adventure.</Text>
 
-        {/* Email Input */}
         <TextInput
           style={styles.input}
           placeholder="Email Address"
@@ -72,7 +126,6 @@ export default function Register({ navigation }) {
           autoCapitalize="none"
         />
 
-        {/* Password Input */}
         <View style={styles.passwordRow}>
           <TextInput
             style={[styles.input, styles.passwordInput]}
@@ -93,7 +146,6 @@ export default function Register({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* Confirm Password Input */}
         <View style={styles.passwordRow}>
           <TextInput
             style={[styles.input, styles.passwordInput]}
@@ -114,7 +166,6 @@ export default function Register({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* Register Button */}
         <TouchableOpacity
           style={styles.button}
           onPress={register}
@@ -127,7 +178,6 @@ export default function Register({ navigation }) {
           )}
         </TouchableOpacity>
 
-        {/* Login Navigation */}
         <TouchableOpacity
           onPress={() => navigation.navigate("Login")}
           style={styles.loginLink}
@@ -142,80 +192,32 @@ export default function Register({ navigation }) {
   );
 }
 
-// --- NEW STYLES ---
+// --- STYLES ---
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 30,
-    justifyContent: "center",
-    backgroundColor: BACKGROUND_COLOR,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "800",
-    color: PRIMARY_COLOR,
-    textAlign: "left",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: SECONDARY_COLOR,
-    textAlign: "left",
-    marginBottom: 40,
-  },
+  container: { flex: 1, padding: 30, justifyContent: "center" },
+  title: { fontSize: 32, fontWeight: "800", color: PRIMARY_COLOR },
+  subtitle: { fontSize: 16, color: SECONDARY_COLOR, marginBottom: 40 },
   input: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#fff",
     padding: 18,
     borderRadius: 12,
     marginVertical: 10,
-    fontSize: 16,
     borderWidth: 1,
-    borderColor: PRIMARY_COLOR + '30', // Light primary border
-    color: TEXT_COLOR,
+    borderColor: PRIMARY_COLOR + "40",
+    fontSize: 16,
   },
-  passwordRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    position: 'relative',
-    marginVertical: 10,
-  },
-  passwordInput: {
-    flex: 1,
-    marginVertical: 0,
-  },
-  eyeButton: {
-    position: "absolute",
-    right: 18,
-    padding: 5,
-    zIndex: 1,
-  },
+  passwordRow: { flexDirection: "row", alignItems: "center", position: "relative" },
+  passwordInput: { flex: 1, marginVertical: 0 },
+  eyeButton: { position: "absolute", right: 18, padding: 5 },
   button: {
     backgroundColor: PRIMARY_COLOR,
     padding: 18,
     borderRadius: 12,
     marginTop: 30,
-    shadowColor: SECONDARY_COLOR,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
     elevation: 8,
   },
-  buttonText: {
-    color: "#fff",
-    textAlign: "center",
-    fontWeight: "700",
-    fontSize: 18,
-  },
-  loginLink: {
-    marginTop: 40,
-    alignSelf: 'center',
-  },
-  loginText: {
-    fontSize: 14,
-    color: TEXT_COLOR,
-  },
-  loginLinkText: {
-    fontWeight: "bold",
-    color: SECONDARY_COLOR,
-  }
+  buttonText: { color: "#fff", textAlign: "center", fontSize: 18, fontWeight: "700" },
+  loginLink: { marginTop: 40, alignSelf: "center" },
+  loginText: { fontSize: 14, color: TEXT_COLOR },
+  loginLinkText: { fontWeight: "bold", color: SECONDARY_COLOR },
 });

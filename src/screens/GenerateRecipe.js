@@ -35,23 +35,25 @@ export default function AIChat() {
     loadUserAndChat();
   }, []);
 
-  const loadUserAndChat = async () => {
-    const u = await getUser();
-    setUser(u);
+const loadUserAndChat = async () => {
+  const u = await getUser();
+  setUser(u);
 
-    const saved = await getChatHistory(u._id);
+  const userId = u?.profile?.userId;
 
-    if (saved && saved.length > 0) {
-      setMessages(saved);
-    } else {
-      setMessages([
-        {
-          role: "assistant",
-          text: "👋 Hi! Ask me anything OR tell me ingredients to generate a recipe!",
-        },
-      ]);
-    }
-  };
+  const saved = await getChatHistory(userId);
+
+  setMessages(
+    saved.length > 0
+      ? saved
+      : [
+          {
+            role: "assistant",
+            text: "👋 Hi! Ask me anything or provide ingredients for a recipe!",
+          },
+        ]
+  );
+};
 
 
 
